@@ -1,54 +1,45 @@
 #include "wrapper.h"
+#include <iostream>
 
-AsyncLogger::AsyncLogger(ILogger* logger) : logger_(logger), stop_(false)
+AsyncLogger::AsyncLogger(ILogger* logger, size_t numThreads)
+	: logger(logger), threadPool(numThreads), stop(false)
 {
-	workerThread_ = std::thread(&AsyncLogger::ProcessLogs, this);
+
 }
 
 AsyncLogger::~AsyncLogger()
 {
-	{
-		std::lock_guard<std::mutex> lock(mutex_);
-		stop_ = true;
-	}
-	condition_.notify_all();
-	workerThread_.join();
-
-	delete logger_;
+	//stop = true;
+	//Flush();
+	//
+	//
 }
 
-void AsyncLogger::Log(std::string_view message)
+void AsyncLogger::Log(std::string_view message) 
 {
 	{
-		std::lock_guard<std::mutex> lock(mutex_);
-		logQueue_.push(message);
+		std::lock_guard<std::mutex> lock(mutex);
+		logQueue.emplace(message);
 	}
-	condition_.notify_one();
-}
-
-void AsyncLogger::ProcessLogs()
-{
-	while (true)
+	
+	threadPool.enqueue([this]
 	{
-		std::string_view message;
+		std::string message;
 		{
-			std::unique_lock<std::mutex> lock(mutex_);
-			condition_.wait(lock, [this] { return !logQueue_.empty() || stop_; });
-
-			if (stop_ && logQueue_.empty())
-				return;
-
-			if (!logQueue_.empty())
-			{
-				message = logQueue_.front();
-				logQueue_.pop();
+			std::lock_guard<std::mutex> lock(mutex);
+			if (!logQueue.empty()) {
+				message = std::move(logQueue.front());
+				logQueue.pop();
 			}
 		}
-		if (!message.empty())
-		{
-			logger_->Log(message);
+		if (!message.empty()) {
+			try {
+				logger->Log(message);
+			} catch (const std::exception& e) {
+				std::cerr << "Logging error: " << e.what() << std::endl;
+			}
 		}
-	}
+	});
 }
 
 void PerformanceTest(ILogger* logger, const std::string& loggerType)
@@ -67,3 +58,17 @@ void PerformanceTest(ILogger* logger, const std::string& loggerType)
 
 	std::cout << "Time taken for " << loggerType << ": " << duration.count() << " seconds" << std::endl;
 }
+
+// again, remove this shit
+/*
+void AsyncLogger::Flush() 
+{
+	std::lock_guard<std::mutex> lock(mutex);
+	while (!logQueue.empty())
+	{
+		std::string message = std::move(logQueue.front());
+		logQueue.pop();
+		logger->Log(message);
+	}
+}
+*/

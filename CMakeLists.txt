@@ -10,6 +10,7 @@ include_directories(${GTEST_INCLUDE_DIRS})
 
 set(SOURCES
 	base-interface.cpp
+	thread-pool.cpp
 	wrapper.cpp
 )
 

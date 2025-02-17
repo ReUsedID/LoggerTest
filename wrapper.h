@@ -1,4 +1,5 @@
 #include "base-interface.h"
+#include "thread-pool.h"
 
 #include <vector>
 #include <mutex>
@@ -10,19 +11,21 @@
 class AsyncLogger : public ILogger
 {
 public:
-	AsyncLogger(ILogger* logger);
+	AsyncLogger(ILogger* logger, size_t numThreads);
 	~AsyncLogger() override;
 
 	void Log(std::string_view message) override;
+	//void Flush();
 
 private:
-	void ProcessLogs();
+	ILogger* logger;
 
-	ILogger* logger_;
-	std::queue<std::string_view> logQueue_;
-	std::mutex mutex_;
-	std::condition_variable condition_;
-	std::thread workerThread_;
-	std::atomic<bool> stop_;
+	// order is important
+	std::mutex mutex;
+	ThreadPool threadPool;
+	//
+	std::queue<std::string> logQueue;
+	std::atomic<bool> stop;
 };
 
+void PerformanceTest(ILogger* logger, const std::string& loggerType);
