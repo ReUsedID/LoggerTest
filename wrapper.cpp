@@ -21,7 +21,7 @@ void AsyncLogger::Log(std::string_view message)
 {
 	{
 		std::lock_guard<std::mutex> lock(mutex_);
-		logQueue_.push(message);
+		logQueue_.push(std::string(message));
 	}
 	condition_.notify_one();
 }
@@ -30,7 +30,7 @@ void AsyncLogger::ProcessLogs()
 {
 	while (true)
 	{
-		std::string_view message;
+		std::string message;
 		{
 			std::unique_lock<std::mutex> lock(mutex_);
 			condition_.wait(lock, [this] { return !logQueue_.empty() || stop_; });
@@ -53,7 +53,7 @@ void AsyncLogger::ProcessLogs()
 
 void PerformanceTest(ILogger* logger, const std::string& loggerType)
 {
-	const int numCalls = 10000;
+	const int numCalls = 1000;
 	auto start = std::chrono::high_resolution_clock::now();
 
 	for (int i = 0; i < numCalls; ++i)

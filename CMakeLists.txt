@@ -13,7 +13,7 @@ set(SOURCES
 	wrapper.cpp
 )
 
-add_executable(AsyncLoggerExample main.cpp ${SOURCES})
+add_executable(async main.cpp ${SOURCES})
 #target_link_libraries(AsyncLoggerExample ${GTEST_LIBRARIES} pthread)
 
 add_executable(AsyncLoggerTests perfomance-test.cpp ${SOURCES})

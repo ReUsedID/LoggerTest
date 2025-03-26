@@ -19,10 +19,11 @@ private:
 	void ProcessLogs();
 
 	ILogger* logger_;
-	std::queue<std::string_view> logQueue_;
+	std::queue<std::string> logQueue_;
 	std::mutex mutex_;
 	std::condition_variable condition_;
 	std::thread workerThread_;
 	std::atomic<bool> stop_;
 };
 
+void PerformanceTest(ILogger* logger, const std::string& loggerType);
