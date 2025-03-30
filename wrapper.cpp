@@ -19,10 +19,10 @@ AsyncLogger::~AsyncLogger()
 
 void AsyncLogger::Log(std::string_view message)
 {
-	{
-		std::lock_guard<std::mutex> lock(mutex_);
-		logQueue_.push(std::string(message));
-	}
+	std::lock_guard<std::mutex> lock(mutex_);
+	if(stop_) return;
+	logQueue_.push(std::string(message));
+	
 	condition_.notify_one();
 }
 
